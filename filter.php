@@ -1,6 +1,6 @@
 <?php
 
-/* 
+/*
  * Copyright (C) 2016 ryan
  *
  * This program is free software; you can redistribute it and/or
@@ -18,9 +18,16 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-defined('MOODLE_INTERNAL') || die();
+defined( 'MOODLE_INTERNAL' ) || die();
+
 class filter_ccembed extends moodle_text_filter {
-    
+
+    /**
+     * Regex to use to determine whether there is a link to a 
+     * ClassCube problem. 
+     */
+    const URL_REGEX = '/(https?:\/\/)?(lvh\.me\/cc-app\/p\/[0-9a-zA-Z\?\&\=;]*)/';
+
     /**
      * Apply the filter to the text
      *
@@ -29,8 +36,51 @@ class filter_ccembed extends moodle_text_filter {
      * @param array $options filter options
      * @return string text after processing
      */
-    public function filter($text, array $options = array()) {
-        return $text;         
+    public function filter( $text, array $options = array() ) {
+        $text = preg_replace_callback( self::URL_REGEX, function($matches) {
+            return $this->build_frame( $matches[ 2 ] );
+        }
+                , $text );
+
+        return $text;
     }
-    
+
+    /**
+     * Builds the iframe code for replacement into the page
+     * 
+     * This needs to pass the problem, assignment if it exists, and any 
+     * information from Moodle to specify what the context is for the
+     * page the iframe is inserted on to. The frame contents will not
+     * have direct access, so it's getting passed as part of the query
+     * string. 
+     * 
+     * @global type $CFG
+     * @global type $PAGE
+     * @param type $link
+     * @return type
+     */
+    private function build_frame( $link ) {
+        global $CFG, $PAGE, $COURSE;
+        
+        $context = $PAGE->context;
+        $coursecontext = $context->get_course_context();
+        $courseid = $coursecontext->instanceid;
+        $mod_info = $PAGE->cm->get_modinfo(); 
+        
+        $url_info = parse_url( $link );
+        parse_str( html_entity_decode( $url_info[ 'query' ] ), $qs );
+
+        if ( empty( $qs[ 'p' ] ) ) {
+            return get_string( 'err_querystring', 'filter_ccembed' );
+        }
+
+        $querystring = 'p=' . $qs[ 'p' ];
+        if ( !empty( $qs[ 'u' ] ) ) {
+            $querystring .= '&u=' . $qs[ 'u' ];
+        }
+        $querystring .= '&cid=' . $context->instanceid; 
+
+        return '<iframe src="' . $CFG->wwwroot . '/filter/ccembed/frame.php?' . $querystring . '" style="' . get_config( 'filter_ccembed', 'iframestyle' ) . '" class="' . get_config( 'filter_ccembed', 'iframecss' ) . '"' . (!empty(get_config('filter_ccembed', 'allowfullscreen')) ? ' allowfullscreen' : '') . '></iframe>';
+    }
+
 }

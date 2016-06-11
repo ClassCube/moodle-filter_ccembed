@@ -1,5 +1,5 @@
 <?php
-/* 
+/*
  * Copyright (C) 2016 Ryan Nutt https://classcube.com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,3 +18,74 @@
  */
 
 /* This file is the iframe target that actually does the LTI launch */
+
+require_once('../../config.php');
+require_once(__DIR__ . '/OAuth.php');
+require_once(__DIR__ . '/functions.php');
+
+global $USER;
+$PAGE->set_url( '/filter/ccembed/frame.php', $_GET );
+$PAGE->set_pagelayout( 'embedded' );
+
+$contextmodule = context_module::instance( $_GET[ 'cid' ] );
+$PAGE->set_context( $contextmodule );
+require_login();
+
+/* Build the LTI form data */
+$domain = parse_url( $CFG->wwwroot, PHP_URL_HOST );
+$domain = preg_replace( '/^www\./', '', $domain );
+$lti_data = [
+    'oauth_version' => '1.0',
+    'oauth_timestamp' => date( 'U' ),
+    'oauth_nonce' => md5( microtime() . mt_rand() ),
+    'oauth_consumer_key' => \filter\ccembed\functions::get_client_key(),
+    'oauth_signature_method' => 'HMAC-SHA1',
+    'oauth_callback' => 'about:blank',
+    'lti_message_type' => 'basic-lti-launch-request',
+    'lti_version' => 'LTI-1p0',
+    'user_id' => $USER->id,
+    'lis_person_sourcedid' => $USER->idnumber,
+    'resource_link_id' => base64_encode(json_encode( ['guid' => $domain, 'cid' => $_GET[ 'cid' ], 'cmid' => $contextmodule->id, 'uid' => $USER->id ] ) ),
+    'custom_problem' => $_GET[ 'p' ],
+    'custom_assignment' => $_GET[ 'u' ],
+    'tool_consumer_instance_guid' => $domain
+];
+
+/* Additional fields that are dependent on settings */
+if (get_config('filter_ccembed', 'hidelink')) {
+    $lti_data['custom_nolink'] = 1; 
+}
+
+$privacy = get_config('filter_ccembed', 'privacy');
+switch ($privacy) {
+    case 'name':
+        $lti_data['lis_person_name_given'] = $USER->firstname;
+        $lti_data['lis_person_name_family'] = $USER->lastname;
+        $lti_data['lis_person_name_full'] = $USER->firstname . ' ' . $USER->lastname; 
+        /* Intentionally not breaking. name includes email as well */
+    case 'email':
+        $lti_data['lis_person_contact_email_primary'] = $USER->email;
+        break;
+}
+
+/* Generat OAuth Signature */
+$request = new \filter\ccembed\OAuthRequest('POST', 'http://lvh.me/cc-app/p/', $lti_data);
+$consumer = new \filter\ccembed\OAuthConsumer(\filter\ccembed\functions::get_client_key(), \filter\ccembed\functions::get_client_secret()); 
+$signature = (new \filter\ccembed\OAuthSignatureMethod_HMAC_SHA1())->build_signature($request, $consumer, false);
+$lti_data['oauth_signature'] = $signature; 
+?>
+<!DOCTYPE html>
+<html><body>
+<form id="frm-launch" action="http://lvh.me/cc-app/p/" method="POST" enctype="application/x-www-form-urlencoded">
+    <?php
+    foreach ($lti_data as $k => $v) {
+        echo '<input type="hidden" name="' . $k . '" value="' . $v . '">';
+    }
+    ?>
+    <noscript>
+    <button type="submit">Launch</button>
+    </noscript>
+</form>
+        <script type="text/javascript">document.getElementById('frm-launch').submit();</script>
+    </body>
+</html>
