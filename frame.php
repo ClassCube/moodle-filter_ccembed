@@ -31,6 +31,15 @@ $contextmodule = context_module::instance( $_GET[ 'cid' ] );
 $PAGE->set_context( $contextmodule );
 require_login();
 
+$oauth_keys = \filter\ccembed\functions::get_client_keys($_GET['course']); 
+
+if (empty($oauth_keys)) {
+    die(get_string('err_nokeys', 'filter_ccembed'));
+}
+else if (empty($oauth_keys->key) || empty($oauth_keys->secret)) {
+    die(get_string('err_nokeys', 'filter_ccembed')); 
+}
+
 /* Build the LTI form data */
 $domain = parse_url( $CFG->wwwroot, PHP_URL_HOST );
 $domain = preg_replace( '/^www\./', '', $domain );
@@ -38,7 +47,7 @@ $lti_data = [
     'oauth_version' => '1.0',
     'oauth_timestamp' => date( 'U' ),
     'oauth_nonce' => md5( microtime() . mt_rand() ),
-    'oauth_consumer_key' => \filter\ccembed\functions::get_client_key(),
+    'oauth_consumer_key' => $oauth_keys->key,
     'oauth_signature_method' => 'HMAC-SHA1',
     'oauth_callback' => 'about:blank',
     'lti_message_type' => 'basic-lti-launch-request',
@@ -50,7 +59,7 @@ $lti_data = [
     'custom_assignment' => $_GET[ 'u' ],
     'tool_consumer_instance_guid' => $domain
 ];
-
+//echo '<pre>'.print_r($lti_data, true).'</pre>'; die(); 
 /* Additional fields that are dependent on settings */
 if (get_config('filter_ccembed', 'hidelink')) {
     $lti_data['custom_nolink'] = 1; 
@@ -69,14 +78,14 @@ switch ($privacy) {
 }
 
 /* Generat OAuth Signature */
-$request = new \filter\ccembed\OAuthRequest('POST', 'http://lvh.me/cc-app/p/', $lti_data);
-$consumer = new \filter\ccembed\OAuthConsumer(\filter\ccembed\functions::get_client_key(), \filter\ccembed\functions::get_client_secret()); 
+$request = new \filter\ccembed\OAuthRequest('POST', 'https://app.classcube.com/p/', $lti_data);
+$consumer = new \filter\ccembed\OAuthConsumer($oauth_keys->key, $oauth_keys->secret); 
 $signature = (new \filter\ccembed\OAuthSignatureMethod_HMAC_SHA1())->build_signature($request, $consumer, false);
 $lti_data['oauth_signature'] = $signature; 
 ?>
 <!DOCTYPE html>
 <html><body>
-<form id="frm-launch" action="http://lvh.me/cc-app/p/" method="POST" enctype="application/x-www-form-urlencoded">
+<form id="frm-launch" action="https://app.classcube.com/p/" method="POST" enctype="application/x-www-form-urlencoded">
     <?php
     foreach ($lti_data as $k => $v) {
         echo '<input type="hidden" name="' . $k . '" value="' . $v . '">';

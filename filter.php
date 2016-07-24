@@ -20,14 +20,16 @@
 
 defined( 'MOODLE_INTERNAL' ) || die();
 
+require_once(__DIR__.'/functions.php'); 
+
 class filter_ccembed extends moodle_text_filter {
 
     /**
      * Regex to use to determine whether there is a link to a 
      * ClassCube problem. 
      */
-    const URL_REGEX = '/(https?:\/\/)?(lvh\.me\/cc-app\/p\/[0-9a-zA-Z\?\&\=;]*)/';
-
+    //const URL_REGEX = '/(https?:\/\/)?(lvh\.me\/cc-app\/p\/[0-9a-zA-Z\?\&\=;]*)/';
+    const URL_REGEX = '/(https?:\/\/)?(app\.classcube\.com\/p\/[0-9a-zA-Z\?\&\=;]*)/';
     /**
      * Apply the filter to the text
      *
@@ -36,12 +38,12 @@ class filter_ccembed extends moodle_text_filter {
      * @param array $options filter options
      * @return string text after processing
      */
-    public function filter( $text, array $options = array() ) {
+    public function filter( $text, array $options = array() ) { 
         $text = preg_replace_callback( self::URL_REGEX, function($matches) {
             return $this->build_frame( $matches[ 2 ] );
         }
                 , $text );
-
+                
         return $text;
     }
 
@@ -79,6 +81,7 @@ class filter_ccembed extends moodle_text_filter {
             $querystring .= '&u=' . $qs[ 'u' ];
         }
         $querystring .= '&cid=' . $context->instanceid; 
+        $querystring .= '&course=' . $courseid;
 
         return '<iframe src="' . $CFG->wwwroot . '/filter/ccembed/frame.php?' . $querystring . '" style="' . get_config( 'filter_ccembed', 'iframestyle' ) . '" class="' . get_config( 'filter_ccembed', 'iframecss' ) . '"' . (!empty(get_config('filter_ccembed', 'allowfullscreen')) ? ' allowfullscreen' : '') . '></iframe>';
     }
