@@ -61,8 +61,11 @@ $lti_data = [
 ];
 //echo '<pre>'.print_r($lti_data, true).'</pre>'; die(); 
 /* Additional fields that are dependent on settings */
-if (get_config('filter_ccembed', 'hidelink')) {
+if (isset($_REQUEST['nolink']) || get_config('filter_ccembed', 'hidelink')) {
     $lti_data['custom_nolink'] = 1; 
+}
+if (isset($_GET['hide_instructions'])) {
+    $lti_data['custom_hide_instructions'] = 1; 
 }
 
 $privacy = get_config('filter_ccembed', 'privacy');

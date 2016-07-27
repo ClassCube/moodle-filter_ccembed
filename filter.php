@@ -28,7 +28,7 @@ class filter_ccembed extends moodle_text_filter {
      * Regex to use to determine whether there is a link to a 
      * ClassCube problem. 
      */
-    const URL_REGEX = '/(https?:\/\/)?(app\.classcube\.com\/p\/[0-9a-zA-Z\?\&\=;]*)/';
+    const URL_REGEX = '/(https?:\/\/)?(app\.classcube\.com\/p\/[0-9a-zA-Z\?\&\=;_]*)/';
 
     /**
      * Used to keep track of the current frame
@@ -82,7 +82,7 @@ class filter_ccembed extends moodle_text_filter {
 
         $url_info = parse_url( $link );
         parse_str( html_entity_decode( $url_info[ 'query' ] ), $qs );
-
+        
         if ( empty( $qs[ 'p' ] ) ) {
             return get_string( 'err_querystring', 'filter_ccembed' );
         }
@@ -90,6 +90,12 @@ class filter_ccembed extends moodle_text_filter {
         $querystring = 'p=' . $qs[ 'p' ];
         if ( !empty( $qs[ 'u' ] ) ) {
             $querystring .= '&u=' . $qs[ 'u' ];
+        }
+        if ( isset( $qs[ 'hide_instructions' ] ) ) {
+            $querystring .= '&hide_instructions';
+        }
+        if ( isset( $qs[ 'nolink' ] ) ) {
+            $querystring .= '&nolink';
         }
         $querystring .= '&cid=' . $context->instanceid;
         $querystring .= '&course=' . $courseid;
