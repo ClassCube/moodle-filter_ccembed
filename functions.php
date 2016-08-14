@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2016 Ryan Nutt - Aelora Web Services, LLC
+ * Copyright (C) 2016 Ryan Nutt - https://classcube.com
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
