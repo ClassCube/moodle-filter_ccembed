@@ -19,7 +19,8 @@
 
 /* This file is the iframe target that actually does the LTI launch */
 
-require_once('../../config.php');
+//require_once('../../config.php');
+require_once('/var/www/html/moodle/config.php'); 
 require_once(__DIR__ . '/OAuth.php');
 require_once(__DIR__ . '/functions.php');
 
@@ -31,7 +32,7 @@ $contextmodule = context_module::instance( $_GET[ 'cid' ] );
 $PAGE->set_context( $contextmodule );
 require_login();
 
-$oauth_keys = \filter\ccembed\functions::get_client_keys($_GET['course']); 
+$oauth_keys = \filter\ccembed\functions::get_client_keys($_GET['course']);
 
 if (empty($oauth_keys)) {
     die(get_string('err_nokeys', 'filter_ccembed'));
@@ -60,9 +61,10 @@ $lti_data = [
     'tool_consumer_instance_guid' => $domain,
     'ext_lms' => 'moodle-2',
     'tool_consumer_info_product_family_code' => 'moodle',
-    'tool_consumer_info_version' => strval($CFG->version)
+    'tool_consumer_info_version' => strval($CFG->version),
+    'context_id' => $PAGE->course->id
 ];
-//echo '<pre>'.print_r($lti_data, true).'</pre>'; die(); 
+
 /* Additional fields that are dependent on settings */
 if (isset($_REQUEST['nolink']) || get_config('filter_ccembed', 'hidelink')) {
     $lti_data['custom_nolink'] = 1; 
