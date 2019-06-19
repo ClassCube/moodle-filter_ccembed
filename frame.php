@@ -57,7 +57,10 @@ $lti_data = [
     'resource_link_id' => base64_encode(json_encode( ['guid' => $domain, 'cid' => $_GET[ 'cid' ], 'cmid' => $contextmodule->id, 'uid' => $USER->id ] ) ),
     'custom_problem' => $_GET[ 'p' ],
     'custom_assignment' => $_GET[ 'u' ],
-    'tool_consumer_instance_guid' => $domain
+    'tool_consumer_instance_guid' => $domain,
+    'ext_lms' => 'moodle-2',
+    'tool_consumer_info_product_family_code' => 'moodle',
+    'tool_consumer_info_version' => strval($CFG->version)
 ];
 //echo '<pre>'.print_r($lti_data, true).'</pre>'; die(); 
 /* Additional fields that are dependent on settings */
