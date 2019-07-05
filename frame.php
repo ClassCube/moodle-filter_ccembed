@@ -19,8 +19,8 @@
 
 /* This file is the iframe target that actually does the LTI launch */
 
-require_once('../../config.php');
-//require_once('/var/www/html/moodle/config.php'); 
+//require_once('../../config.php');
+require_once('/var/www/html/moodle/config.php');
 require_once(__DIR__ . '/OAuth.php');
 require_once(__DIR__ . '/functions.php');
 
@@ -32,13 +32,24 @@ $contextmodule = context_module::instance( $_GET[ 'cid' ] );
 $PAGE->set_context( $contextmodule );
 require_login();
 
-$oauth_keys = \filter\ccembed\functions::get_client_keys($_GET['course']);
+$coursecontext = $contextmodule->get_course_context();
+$courseid = $coursecontext->instanceid;
 
-if (empty($oauth_keys)) {
-    die(get_string('err_nokeys', 'filter_ccembed'));
+/* Make sure this user is enrolled in the course id passed in $_GET. Not sure how
+ * to validate against the actual course it's embedded in, but this should at least
+ * keep users from getting to courses they don't belong to. 
+ */
+if ( !is_enrolled( $coursecontext, $USER->id, '', true ) ) {
+  header( 'HTTP/1.1 403' );
+  die( 'There is a problem with this problem' );
 }
-else if (empty($oauth_keys->key) || empty($oauth_keys->secret)) {
-    die(get_string('err_nokeys', 'filter_ccembed')); 
+$oauth_keys = \filter\ccembed\functions::get_client_keys( $_GET[ 'course' ] );
+
+if ( empty( $oauth_keys ) ) {
+  die( get_string( 'err_nokeys', 'filter_ccembed' ) );
+}
+else if ( empty( $oauth_keys->key ) || empty( $oauth_keys->secret ) ) {
+  die( get_string( 'err_nokeys', 'filter_ccembed' ) );
 }
 
 /* Build the LTI form data */
@@ -55,54 +66,66 @@ $lti_data = [
     'lti_version' => 'LTI-1p0',
     'user_id' => $USER->id,
     'lis_person_sourcedid' => $USER->idnumber,
-    'resource_link_id' => base64_encode(json_encode( ['guid' => $domain, 'cid' => $_GET[ 'cid' ], 'cmid' => $contextmodule->id, 'uid' => $USER->id ] ) ),
+    'resource_link_id' => base64_encode( json_encode( [ 'guid' => $domain, 'cid' => $_GET[ 'cid' ], 'cmid' => $contextmodule->id, 'uid' => $USER->id ] ) ),
     'custom_problem' => $_GET[ 'p' ],
     'custom_assignment' => $_GET[ 'u' ],
     'tool_consumer_instance_guid' => $domain,
     'ext_lms' => 'moodle-2',
     'tool_consumer_info_product_family_code' => 'moodle',
-    'tool_consumer_info_version' => strval($CFG->version),
-    'context_id' => $PAGE->course->id
+    'tool_consumer_info_version' => strval( $CFG->version ),
+    'context_id' => $courseid,
+    'context_label' => trim( strip_tags( $PAGE->course->shortname ) ),
+    'context_title' => trim( strip_tags( $PAGE->course->fullname ) ),
+    'roles' => lti_get_ims_role( $USER, null, $courseid, false )
 ];
 
-/* Additional fields that are dependent on settings */
-if (isset($_REQUEST['nolink']) || get_config('filter_ccembed', 'hidelink')) {
-    $lti_data['custom_nolink'] = 1; 
+if ( !empty( $CFG->mod_lti_institution_name ) ) {
+  $lti_data[ 'tool_consumer_instance_name' ] = trim( strip_tags( $CFG->mod_lti_institution_name ) );
 }
-if (isset($_GET['hide_instructions'])) {
-    $lti_data['custom_hide_instructions'] = 1; 
+else {
+  $lti_data[ 'tool_consumer_instance_name' ] = get_site()->shortname;
+}
+$lti_data[ 'tool_consumer_instance_description' ] = trim( strip_tags( get_site()->fullname ) );
+
+/* Additional fields that are dependent on settings */
+if ( isset( $_REQUEST[ 'nolink' ] ) || get_config( 'filter_ccembed', 'hidelink' ) ) {
+  $lti_data[ 'custom_nolink' ] = 1;
+}
+if ( isset( $_GET[ 'hide_instructions' ] ) ) {
+  $lti_data[ 'custom_hide_instructions' ] = 1;
 }
 
-$privacy = get_config('filter_ccembed', 'privacy');
-switch ($privacy) {
-    case 'name':
-        $lti_data['lis_person_name_given'] = $USER->firstname;
-        $lti_data['lis_person_name_family'] = $USER->lastname;
-        $lti_data['lis_person_name_full'] = $USER->firstname . ' ' . $USER->lastname; 
-        /* Intentionally not breaking. name includes email as well */
-    case 'email':
-        $lti_data['lis_person_contact_email_primary'] = $USER->email;
-        break;
+$privacy = get_config( 'filter_ccembed', 'privacy' );
+switch ( $privacy ) {
+  case 'name':
+    $lti_data[ 'lis_person_name_given' ] = $USER->firstname;
+    $lti_data[ 'lis_person_name_family' ] = $USER->lastname;
+    $lti_data[ 'lis_person_name_full' ] = $USER->firstname . ' ' . $USER->lastname;
+  /* Intentionally not breaking. name includes email as well */
+  case 'email':
+    $lti_data[ 'lis_person_contact_email_primary' ] = $USER->email;
+    break;
 }
 
 /* Generat OAuth Signature */
-$request = new \filter\ccembed\OAuthRequest('POST', 'https://app.classcube.com/p/', $lti_data);
-$consumer = new \filter\ccembed\OAuthConsumer($oauth_keys->key, $oauth_keys->secret); 
-$signature = (new \filter\ccembed\OAuthSignatureMethod_HMAC_SHA1())->build_signature($request, $consumer, false);
-$lti_data['oauth_signature'] = $signature; 
+$request = new \filter\ccembed\OAuthRequest( 'POST', 'https://app.classcube.com/p/', $lti_data );
+$consumer = new \filter\ccembed\OAuthConsumer( $oauth_keys->key, $oauth_keys->secret );
+$signature = (new \filter\ccembed\OAuthSignatureMethod_HMAC_SHA1() )->build_signature( $request, $consumer, false );
+$lti_data[ 'oauth_signature' ] = $signature;
+
 ?>
 <!DOCTYPE html>
 <html><body>
-<form id="frm-launch" action="https://app.classcube.com/p/" method="POST" enctype="application/x-www-form-urlencoded">
-    <?php
-    foreach ($lti_data as $k => $v) {
+    <form id="frm-launch" action="https://app.classcube.com/p/" method="POST" enctype="application/x-www-form-urlencoded">
+      <?php
+      foreach ( $lti_data as $k => $v ) {
         echo '<input type="hidden" name="' . $k . '" value="' . $v . '">';
-    }
-    ?>
-    <noscript>
-    <button type="submit">Launch</button>
-    </noscript>
-</form>
-        <script type="text/javascript">document.getElementById('frm-launch').submit();</script>
-    </body>
+      }
+      ?>
+      <noscript>
+      <button type="submit">Launch</button>
+      </noscript>
+    </form>
+    <script type="text/javascript">document.getElementById('frm-launch').submit();</script>
+  </body>
 </html>
