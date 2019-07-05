@@ -19,8 +19,8 @@
 
 /* This file is the iframe target that actually does the LTI launch */
 
-//require_once('../../config.php');
-require_once('/var/www/html/moodle/config.php');
+require_once('../../config.php');
+//require_once('/var/www/html/moodle/config.php');
 require_once(__DIR__ . '/OAuth.php');
 require_once(__DIR__ . '/functions.php');
 
