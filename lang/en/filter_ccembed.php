@@ -52,6 +52,10 @@ $string[ 'client_secret_desc' ] = 'The client secret code from the key that you 
 $string[ 'client_key' ] = 'Client key';
 $string[ 'client_key_desc' ] = 'The client key from the key that you created in ClassCube';
 
+$string['custom_heading'] = 'Custom Fields';
+$string['custom_heading_help'] = 'If you have extra fields to send to ClassCube, you can enter them here. Odds are you should leave this blank.';
+$string['custom_fields'] = 'Custom Fields'; 
+
 $string['err_querystring'] = 'The link does not appear to contain the correct values'; 
 
 $string['err_nokeys'] = 'Cannot find OAuth keys for this launch. Please check your settings for the ClassCube Embed Filter.';

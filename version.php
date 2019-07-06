@@ -19,6 +19,6 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
-$plugin->version   = 2016052500;        
+$plugin->version   = 2019070500;        
 $plugin->requires  = 2015111600;        // Moodle 3.0
 $plugin->component = 'filter_ccembed'; 

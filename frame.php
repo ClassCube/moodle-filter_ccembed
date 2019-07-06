@@ -19,8 +19,8 @@
 
 /* This file is the iframe target that actually does the LTI launch */
 
-require_once('../../config.php');
-//require_once('/var/www/html/moodle/config.php');
+//require_once('../../config.php');
+require_once('/var/www/html/moodle/config.php');
 require_once(__DIR__ . '/OAuth.php');
 require_once(__DIR__ . '/functions.php');
 
@@ -39,7 +39,7 @@ $courseid = $coursecontext->instanceid;
  * to validate against the actual course it's embedded in, but this should at least
  * keep users from getting to courses they don't belong to. 
  */
-if ( !is_enrolled( $coursecontext, $USER->id, '', true ) ) {
+if ( !is_enrolled( $coursecontext, $USER->id, '', true ) &&  !is_siteadmin() ) {
   header( 'HTTP/1.1 403' );
   die( 'There is a problem with this problem' );
 }
@@ -105,6 +105,22 @@ switch ( $privacy ) {
   case 'email':
     $lti_data[ 'lis_person_contact_email_primary' ] = $USER->email;
     break;
+}
+
+/* Custom Fields */
+$custom_fields = get_config( 'filter_ccembed', 'custom_fields' );
+if (!empty($custom_fields)) {
+  foreach (explode("\n", $custom_fields) as $field) {
+    $field = trim($field);
+    $split = explode('=', $field, 2);
+    if (isset($split[1])) {
+      $split[0] = trim($split[0]);
+      $split[1] = trim($split[1]);
+      if (!empty($split[0]) && !empty($split[1])) {
+        $lti_data['custom_' . $split[0]] = $split[1];
+      }
+    }
+  }
 }
 
 /* Generat OAuth Signature */
