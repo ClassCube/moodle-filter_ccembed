@@ -37,6 +37,9 @@ $string['iframe_styles_desc'] = 'This will be inserted into the style attribute 
 $string[ 'hidelink' ] = 'Hide link button';
 $string[ 'hidelink_desc' ] = 'If enabled, the button to link to a ClassCube account will not be shown when problems are displayed.';
 
+$string['sendgroups'] = 'Send Group IDs';
+$string['sendgroups_desc'] = 'If enabled, the ids of the groups the user belongs to are sent to ClassCube. This is used to allow teachers to only see their students.'; 
+
 $string[ 'allow_fullscreen' ] = 'Allow full screen';
 $string[ 'allow_fullscreen_desc' ] = 'If enabled, the filter will attempt to allow the iframe to show full screen. Not all browsers will allow this.';
 

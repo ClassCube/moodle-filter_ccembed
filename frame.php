@@ -107,6 +107,12 @@ switch ( $privacy ) {
     break;
 }
 
+/* Groups */
+$sendgroups = get_config('filter_ccembed', 'sendgroups');
+if ($sendgroups) {
+  $lti_data['custom_group'] = implode(",", groups_get_user_groups($courseid, $USER->id)[0]);
+}
+
 /* Custom Fields */
 $custom_fields = get_config( 'filter_ccembed', 'custom_fields' );
 if (!empty($custom_fields)) {

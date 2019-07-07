@@ -27,6 +27,8 @@ if ( $ADMIN->fulltree ) {
 
   $settings->add( new admin_setting_configcheckbox( 'filter_ccembed/hidelink', get_string( 'hidelink', 'filter_ccembed' ), get_string( 'hidelink_desc', 'filter_ccembed' ), false ) );
 
+  $settings->add( new admin_setting_configcheckbox( 'filter_ccembed/sendgroups', get_string( 'sendgroups', 'filter_ccembed' ), get_string( 'sendgroups_desc', 'filter_ccembed' ), true ) );
+
   $settings->add( new admin_setting_configtext( 'filter_ccembed/iframecss', new lang_string( 'iframe_classes', 'filter_ccembed' ), new lang_string( 'iframe_classes_desc', 'filter_ccembed' ), 'classcube-frame', PARAM_RAW ) );
 
   $settings->add( new admin_setting_configtext( 'filter_ccembed/iframestyle', new lang_string( 'iframe_styles', 'filter_ccembed' ), new lang_string( 'iframe_styles_desc', 'filter_ccembed' ), 'width:100%;height:300px;display:block;border:none;' ) );
